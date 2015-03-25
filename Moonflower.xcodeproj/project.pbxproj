@@ -14,6 +14,10 @@
 		BE1A72F31AC1DD8B00789DF0 /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = BE1A72F21AC1DD8B00789DF0 /* Images.xcassets */; };
 		BE1A72F61AC1DD8B00789DF0 /* LaunchScreen.xib in Resources */ = {isa = PBXBuildFile; fileRef = BE1A72F41AC1DD8B00789DF0 /* LaunchScreen.xib */; };
 		BE1A73021AC1DD8B00789DF0 /* MoonflowerTests.m in Sources */ = {isa = PBXBuildFile; fileRef = BE1A73011AC1DD8B00789DF0 /* MoonflowerTests.m */; };
+		BE1A730D1AC1DD9E00789DF0 /* MFJSONObject.m in Sources */ = {isa = PBXBuildFile; fileRef = BE1A730C1AC1DD9E00789DF0 /* MFJSONObject.m */; };
+		BE1A73121AC1DE6D00789DF0 /* User.m in Sources */ = {isa = PBXBuildFile; fileRef = BE1A73111AC1DE6D00789DF0 /* User.m */; };
+		BE1A73151AC1EC3F00789DF0 /* Post.m in Sources */ = {isa = PBXBuildFile; fileRef = BE1A73141AC1EC3F00789DF0 /* Post.m */; };
+		BE1A73181AC1EC4800789DF0 /* Comment.m in Sources */ = {isa = PBXBuildFile; fileRef = BE1A73171AC1EC4800789DF0 /* Comment.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -40,6 +44,14 @@
 		BE1A72FB1AC1DD8B00789DF0 /* MoonflowerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MoonflowerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		BE1A73001AC1DD8B00789DF0 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		BE1A73011AC1DD8B00789DF0 /* MoonflowerTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MoonflowerTests.m; sourceTree = "<group>"; };
+		BE1A730B1AC1DD9E00789DF0 /* MFJSONObject.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MFJSONObject.h; sourceTree = "<group>"; };
+		BE1A730C1AC1DD9E00789DF0 /* MFJSONObject.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MFJSONObject.m; sourceTree = "<group>"; };
+		BE1A73101AC1DE6D00789DF0 /* User.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = User.h; sourceTree = "<group>"; };
+		BE1A73111AC1DE6D00789DF0 /* User.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = User.m; sourceTree = "<group>"; };
+		BE1A73131AC1EC3F00789DF0 /* Post.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Post.h; sourceTree = "<group>"; };
+		BE1A73141AC1EC3F00789DF0 /* Post.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Post.m; sourceTree = "<group>"; };
+		BE1A73161AC1EC4800789DF0 /* Comment.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Comment.h; sourceTree = "<group>"; };
+		BE1A73171AC1EC4800789DF0 /* Comment.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Comment.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -81,6 +93,8 @@
 		BE1A72E41AC1DD8B00789DF0 /* Moonflower */ = {
 			isa = PBXGroup;
 			children = (
+				BE1A730E1AC1DE4D00789DF0 /* Moonflower */,
+				BE1A730F1AC1DE5A00789DF0 /* Models */,
 				BE1A72E91AC1DD8B00789DF0 /* AppDelegate.h */,
 				BE1A72EA1AC1DD8B00789DF0 /* AppDelegate.m */,
 				BE1A72EC1AC1DD8B00789DF0 /* ViewController.h */,
@@ -117,6 +131,28 @@
 				BE1A73001AC1DD8B00789DF0 /* Info.plist */,
 			);
 			name = "Supporting Files";
+			sourceTree = "<group>";
+		};
+		BE1A730E1AC1DE4D00789DF0 /* Moonflower */ = {
+			isa = PBXGroup;
+			children = (
+				BE1A730B1AC1DD9E00789DF0 /* MFJSONObject.h */,
+				BE1A730C1AC1DD9E00789DF0 /* MFJSONObject.m */,
+			);
+			name = Moonflower;
+			sourceTree = "<group>";
+		};
+		BE1A730F1AC1DE5A00789DF0 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				BE1A73101AC1DE6D00789DF0 /* User.h */,
+				BE1A73111AC1DE6D00789DF0 /* User.m */,
+				BE1A73131AC1EC3F00789DF0 /* Post.h */,
+				BE1A73141AC1EC3F00789DF0 /* Post.m */,
+				BE1A73161AC1EC4800789DF0 /* Comment.h */,
+				BE1A73171AC1EC4800789DF0 /* Comment.m */,
+			);
+			name = Models;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -219,7 +255,11 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				BE1A73181AC1EC4800789DF0 /* Comment.m in Sources */,
+				BE1A73121AC1DE6D00789DF0 /* User.m in Sources */,
+				BE1A73151AC1EC3F00789DF0 /* Post.m in Sources */,
 				BE1A72EE1AC1DD8B00789DF0 /* ViewController.m in Sources */,
+				BE1A730D1AC1DD9E00789DF0 /* MFJSONObject.m in Sources */,
 				BE1A72EB1AC1DD8B00789DF0 /* AppDelegate.m in Sources */,
 				BE1A72E81AC1DD8B00789DF0 /* main.m in Sources */,
 			);
