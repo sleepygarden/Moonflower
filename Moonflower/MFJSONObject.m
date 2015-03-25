@@ -47,9 +47,9 @@ NSString * const kMFJSONClassKey = @"_mf_class_key";
 
 #pragma mark - Generate, Pack + unpack
 +(instancetype)generate:(NSDictionary *)properties {
-    Class class = NSClassFromString([self _formatClassNameCamelCase:properties[kMFJSONClassKey]]);
-    properties = [class _formatJSONKeysCamelCase:properties]; // applies user defined clean up of under_score_syntax for camelCaseSyntax
-    id instance = [[class alloc] initWithProperties:properties];
+    Class klass = NSClassFromString([self _formatClassNameCamelCase:properties[kMFJSONClassKey]]);
+    properties = [klass _formatJSONKeysCamelCase:properties]; // applies user defined clean up of under_score_syntax for camelCaseSyntax
+    id instance = [[klass alloc] initWithJSON:properties];
     [instance didGenerateFromJSON:properties];
     return instance;
 }
@@ -67,7 +67,7 @@ NSString * const kMFJSONClassKey = @"_mf_class_key";
     }
 }
 
--(id)initWithProperties:(NSDictionary *)properties {
+-(id)initWithJSON:(NSDictionary *)json {
     self = [self init];
     if (self){
         for (NSString *propertyName in [self _propertyNames]){
@@ -75,13 +75,23 @@ NSString * const kMFJSONClassKey = @"_mf_class_key";
             if ([[self class] jsonOverrideKeys][propertyName]){
                 key = [[self class] jsonOverrideKeys][propertyName];
             }
-            id value = properties[key];
+            id value = json[key];
             if (value){
                 if ([value isKindOfClass:[NSDictionary class]]){
-                    [self setValue:[self _recursiveGenerateDict:value] forKey:propertyName];
+                    if ([(NSDictionary*)value count] == 0){
+                        [self setValue:[NSNull null] forKey:propertyName];
+                    }
+                    else {
+                        [self setValue:[self _recursiveGenerateDict:value] forKey:propertyName];
+                    }
                 }
                 else if ([value isKindOfClass:[NSArray class]]){
-                    [self setValue:[self _recursiveGenerateArray:value] forKey:propertyName];
+                    if ([(NSArray*)value count] == 0){
+                        [self setValue:[NSNull null] forKey:propertyName];
+                    }
+                    else {
+                        [self setValue:[self _recursiveGenerateArray:value] forKey:propertyName];
+                    }
                 }
                 else if ([value isKindOfClass:[NSNumber class]]){
                     [self setValue:value forKey:propertyName];
@@ -114,24 +124,34 @@ NSString * const kMFJSONClassKey = @"_mf_class_key";
             json[key] = [value json];
         }
         else if ([value isKindOfClass:[NSArray class]]){
-            NSMutableArray *mArr = [value mutableCopy];
-            for (int idx = 0; idx < [value count]; idx++){
-                id collectionValue = [value objectAtIndex:idx];
-                if ([collectionValue isKindOfClass:[MFJSONObject class]] && [collectionValue respondsToSelector:@selector(json)]){
-                    mArr[idx] = [collectionValue json];
-                }
+            if ([(NSArray*)value count] == 0){
+                json[key] = [NSNull null];
             }
-            json[key] = mArr;
+            else {
+                NSMutableArray *mArr = [value mutableCopy];
+                for (int idx = 0; idx < [value count]; idx++){
+                    id collectionValue = [value objectAtIndex:idx];
+                    if ([collectionValue isKindOfClass:[MFJSONObject class]] && [collectionValue respondsToSelector:@selector(json)]){
+                        mArr[idx] = [collectionValue json];
+                    }
+                }
+                json[key] = mArr;
+            }
         }
         else if ([value isKindOfClass:[NSDictionary class]]){
-            NSMutableDictionary *mDict = [value mutableCopy];
-            for (id key in [value keyEnumerator]){
-                id collectionValue = [value objectForKey:key];
-                if ([collectionValue isKindOfClass:[MFJSONObject class]] && [collectionValue respondsToSelector:@selector(json)]){
-                    mDict[key] = [collectionValue json];
-                }
+            if ([(NSDictionary*)value count] == 0){
+                json[key] = [NSNull null];
             }
-            json[key] = mDict;
+            else {
+                NSMutableDictionary *mDict = [value mutableCopy];
+                for (id key in [value keyEnumerator]){
+                    id collectionValue = [value objectForKey:key];
+                    if ([collectionValue isKindOfClass:[MFJSONObject class]] && [collectionValue respondsToSelector:@selector(json)]){
+                        mDict[key] = [collectionValue json];
+                    }
+                }
+                json[key] = mDict;
+            }
         }
         else if ([value isKindOfClass:[NSString class]] || [value isKindOfClass:[NSNumber class]]){
             json[key] = value;
@@ -167,8 +187,8 @@ NSString * const kMFJSONClassKey = @"_mf_class_key";
 // recursively search through dictionary values for more MSJSONObjects
 -(id)_recursiveGenerateDict:(NSDictionary*)dict{
     if (dict[kMFJSONClassKey]){ // found a dict which describes a sub obj
-        Class class = NSClassFromString([MFJSONObject _formatClassNameCamelCase:dict[kMFJSONClassKey]]);
-        return [class generate:dict];
+        Class klass = NSClassFromString([MFJSONObject _formatClassNameCamelCase:dict[kMFJSONClassKey]]);
+        return [klass generate:dict];
     }
     else { // for each element, check for sub obj
         NSMutableDictionary *mDict = [dict mutableCopy];
@@ -358,14 +378,14 @@ NSString * const kMFJSONClassKey = @"_mf_class_key";
     return [MFJSONObject _propertiesForHierarchyOfClass:[self class]];
 }
 
-+(NSArray*)_propertiesForHierarchyOfClass:(Class)class {
-    if (class == [NSObject class]) { // base case, we can skip these
++(NSArray*)_propertiesForHierarchyOfClass:(Class)klass {
+    if (klass == [NSObject class]) { // base case, we can skip these
         return nil;
     }
     
     // Collect properties from the current class, append the subclasses properties
-    NSArray *props = [self _propertiesForSubclass:class];
-    return [props arrayByAddingObjectsFromArray:[self _propertiesForHierarchyOfClass:[class superclass]]];
+    NSArray *props = [self _propertiesForSubclass:klass];
+    return [props arrayByAddingObjectsFromArray:[self _propertiesForHierarchyOfClass:[klass superclass]]];
     
 }
 
@@ -377,14 +397,14 @@ NSString * const kMFJSONClassKey = @"_mf_class_key";
             ![[self ignoredProperties] containsObject:name]);
 }
 
-+(NSArray*)_propertiesForSubclass:(Class)class {
++(NSArray*)_propertiesForSubclass:(Class)klass {
     unsigned count;
-    objc_property_t *properties = class_copyPropertyList(class, &count);
+    objc_property_t *properties = class_copyPropertyList(klass, &count);
     NSMutableArray *propertyList = [NSMutableArray new];
     for (unsigned idx = 0; idx < count; idx++) {
         objc_property_t property = properties[idx];
         NSString *name = [NSString stringWithUTF8String:property_getName(property)];
-        if ([class _propertyShouldBeSkipped:name]){
+        if ([klass _propertyShouldBeSkipped:name]){
             [propertyList addObject:name];
         }
     }

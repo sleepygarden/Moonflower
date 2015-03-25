@@ -10,6 +10,20 @@
 
 @implementation User
 
+-(id)initWithName:(NSString*)name{
+    self = [self init];
+    if (self) {
+        self.name = name;
+        self.dict = [NSDictionary new]; // empty
+        self.userId = [name hash];
+        self.joinDate = [NSDate date];
+        self.array = nil;
+        self.profilePicUrl = [NSURL URLWithString:@"http://www.example.com"];
+
+    }
+    return self;
+}
+
 -(id)init {
     self = [super init];
     if (self){

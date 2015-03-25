@@ -11,8 +11,11 @@
 
 @interface User : MFJSONObject
 @property (strong, nonatomic) NSString *name;
-@property (strong, nonatomic) NSMutableDictionary *postDict;
-@property (nonatomic) CGSize pantsSize;
+@property (strong, nonatomic) NSDictionary *dict;
+@property (strong, nonatomic) NSArray *array;
+@property (strong, nonatomic) NSDate *joinDate;
+@property (strong, nonatomic) NSURL *profilePicUrl;
 @property (strong, nonatomic) User *bff;
-@property (nonatomic) NSUInteger userNumber;
+@property (nonatomic) NSUInteger userId;
+-(id)initWithName:(NSString*)name;
 @end
