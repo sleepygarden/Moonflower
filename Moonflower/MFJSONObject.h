@@ -22,7 +22,7 @@
 // override these to manually handle how a class packs and unpacks objects of a certain type. MFJSONObject does NSURLs and NSDates for you
 -(id)objectFromStringRepresentation:(NSString*)stringRepresentation;
 -(NSString*)stringRepresentationOfObject:(id)obj;
-
+-(NSDateFormatter*)dateFormatter; // override to provide manual date formatting
 -(id)initWithProperties:(NSDictionary*)properties;
 -(void)didGenerateFromJSON:(NSDictionary*)json; // do additional setup while unpacking from json
 -(NSDictionary*)amendOutgoingJSON:(NSDictionary*)outgoingJSON; // do additional setup while packing object into json
