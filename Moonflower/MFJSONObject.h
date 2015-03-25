@@ -23,9 +23,9 @@
 -(id)objectFromStringRepresentation:(NSString*)stringRepresentation;
 -(NSString*)stringRepresentationOfObject:(id)obj;
 
-
 -(id)initWithProperties:(NSDictionary*)properties;
--(void)didGenerateFromJSON:(NSDictionary*)json;
+-(void)didGenerateFromJSON:(NSDictionary*)json; // do additional setup while unpacking from json
+-(NSDictionary*)amendOutgoingJSON:(NSDictionary*)outgoingJSON; // do additional setup while packing object into json
 -(NSDictionary*)json;
 -(NSDictionary*)jsonString;
 @end

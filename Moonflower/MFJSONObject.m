@@ -27,6 +27,9 @@ NSString * const kMFJSONClassKey = @"_mf_class_key";
 
 -(void)didGenerateFromJSON:(NSDictionary *)json {
 }
+-(NSDictionary*)amendOutgoingJSON:(NSDictionary *)outgoingJSON {
+    return outgoingJSON;
+}
 
 -(id)objectFromStringRepresentation:(NSString *)stringRepresentation {
     return nil;
@@ -142,7 +145,7 @@ NSString * const kMFJSONClassKey = @"_mf_class_key";
         }
     }
     json[kMFJSONClassKey] = NSStringFromClass([self class]);
-    return json;
+    return [self amendOutgoingJSON:json];
 }
 
 -(NSString*)jsonString {
