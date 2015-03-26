@@ -148,7 +148,8 @@ example ...
 }
 ...
 
-// properties with with these names will be outright ignored by MFJSONObject's packing and unpacking process
+// properties with with these names will be outright ignored by MFJSONObject's
+// packing and unpacking process
 +(NSArray*)ignoredProperties; 
 
 example ...
