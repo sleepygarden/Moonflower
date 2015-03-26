@@ -19,12 +19,36 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
     // Do any additional setup after loading the view, typically from a nib.
-    User *user = [[User alloc] initWithName:@"Mike"];
-    user.bff = [[User alloc] initWithName:@"Erin"];
-    NSLog(@"User: %@",user.json);
-    NSDictionary *json = user.json;
-    User *cloneUser = [User generate:json];
-    NSLog(@"Clone: %@",cloneUser.json);
+    __block User *user;
+    [self timeBlock:^{
+        user = [[User alloc] initWithName:@"Mike"];
+        user.bff = [[User alloc] initWithName:@"Erin"];
+    } times:1000];
+    
+    [self timeBlock:^{
+        NSDictionary *json = user.json;
+        [User generate:json];
+    } times:1000];
+        
+    [self timeBlock:^{
+        NSDictionary *json = user.json;
+        [User generate:json];
+    } times:1000];
+    
+    [self timeBlock:^{
+        NSDictionary *json = user.json;
+        [User generate:json];
+    } times:1000];
+}
+
+-(void)timeBlock:(void (^)(void))block times:(int)testTimes{
+    NSDate *methodStart = [NSDate date];
+    for (int idx = 0; idx < testTimes; idx++) {
+        block();
+    }
+    NSDate *methodFinish = [NSDate date];
+    NSTimeInterval executionTime = [methodFinish timeIntervalSinceDate:methodStart] / testTimes;
+    NSLog(@"executionTime = %f", executionTime);
 }
 
 @end
