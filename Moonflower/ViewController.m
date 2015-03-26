@@ -25,6 +25,15 @@
         user.bff = [[User alloc] initWithName:@"Erin"];
     } times:1000];
     
+    [self timeBlock:^{
+        NSDictionary *json = user.json;
+        [User generate:json];
+    } times:1000];
+        
+    [self timeBlock:^{
+        NSDictionary *json = user.json;
+        [User generate:json];
+    } times:1000];
     
     [self timeBlock:^{
         NSDictionary *json = user.json;
