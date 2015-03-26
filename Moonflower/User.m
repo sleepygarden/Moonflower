@@ -27,7 +27,7 @@
 -(id)init {
     self = [super init];
     if (self){
-        NSLog(@"loading class defaults for instance of %@",[self class]);
+//        NSLog(@"loading class defaults for instance of %@",[self class]);
     }
     return self;
 }
@@ -38,7 +38,7 @@
     return @[@"pantsSize"];
 }
 -(void)didGenerateFromJSON:(NSDictionary*)json {
-    NSLog(@"user did generate, name:%@",self.name);
+   // NSLog(@"user did generate, name:%@",self.name);
 }
 
 -(NSString*)stringRepresentationOfObject:(id)obj {

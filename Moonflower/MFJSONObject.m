@@ -234,7 +234,7 @@ NSString * const kMFJSONClassKey = @"_mf_class_key";
 }
 
 -(id)_objectForString:(id)string propertyName:(NSString*)propertyName{
-    NSString *typeStr = [self _typeOfPropertyNamed:propertyName];
+    NSString *typeStr = [[self class] _typeOfPropertyNamed:propertyName];
     if ([typeStr containsString:@"NSString"]){
         return string;
     }
@@ -253,28 +253,35 @@ NSString * const kMFJSONClassKey = @"_mf_class_key";
     }
 }
 
--(NSString*)_typeOfPropertyNamed:(NSString *)name {
-    objc_property_t property = class_getProperty([self class], [name UTF8String]);
-    if (property == NULL) {
-        return (NULL);
++(NSString*)_typeOfPropertyNamed:(NSString *)name {
+    NSString *propertyType = [self _propertyTypeCache][name];
+    if (propertyType){
+        return propertyType;
     }
-    
-    const char* attrs = property_getAttributes(property);
-    if (attrs == NULL) {
-        return (NULL);
+    else {
+        objc_property_t property = class_getProperty(self, [name UTF8String]);
+        if (property == NULL) {
+            return (NULL);
+        }
+        
+        const char* attrs = property_getAttributes(property);
+        if (attrs == NULL) {
+            return (NULL);
+        }
+        
+        static char buffer[256];
+        const char *e = strchr(attrs, ',');
+        if (e == NULL){
+            return (NULL);
+        }
+        
+        int len = (int)(e - attrs);
+        memcpy(buffer, attrs, len);
+        buffer[len] = '\0';
+        propertyType = [NSString stringWithUTF8String:buffer];
+        [self _propertyTypeCache][name] = propertyType;
+        return propertyType;
     }
-    
-    static char buffer[256];
-    const char *e = strchr(attrs, ',');
-    if (e == NULL){
-        return (NULL);
-    }
-    
-    int len = (int)(e - attrs);
-    memcpy(buffer, attrs, len);
-    buffer[len] = '\0';
-    
-    return [NSString stringWithUTF8String:buffer];
 }
 
 #pragma mark - format keys
@@ -297,79 +304,102 @@ NSString * const kMFJSONClassKey = @"_mf_class_key";
 
 // default formatting for property names when reading keys
 +(NSString*)_formatUnderScore:(NSString*)propertyName {
-    NSString *searchPattern = @"([a-z][A-Z])";
-    NSError *error;
-    NSMutableSet *swaps = [NSMutableSet new];
-    NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:searchPattern options:0 error:&error];
-    if (!error){
-        [regex enumerateMatchesInString:propertyName options:0 range:NSMakeRange(0, propertyName.length) usingBlock:
-         ^(NSTextCheckingResult *result, NSMatchingFlags flags, BOOL *stop) {
-             [swaps addObject:[propertyName substringWithRange:result.range]];
-         }];
-        for (NSString *stringToSwap in swaps){
-            NSString *formatted = [NSString stringWithFormat:@"%c_%c",[stringToSwap characterAtIndex:0],[stringToSwap characterAtIndex:1]];
-            propertyName = [propertyName stringByReplacingOccurrencesOfString:stringToSwap withString:formatted];
-        }
+    NSString *jsonKey = [self _underscoreJSONKeyCache][propertyName];
+    if (jsonKey){
+        return jsonKey;
     }
     else {
-        NSLog(@"Error, failed to format property name: %@",error.localizedDescription);
-    }
-    
-    // catch word trailing ALLCAPS word
-    searchPattern = @"([A-Z][a-z])";
-    swaps = [NSMutableSet new];
-    regex = [NSRegularExpression regularExpressionWithPattern:searchPattern options:0 error:&error];
-    if (!error){
-        [regex enumerateMatchesInString:propertyName options:0 range:NSMakeRange(0, propertyName.length) usingBlock:
-         ^(NSTextCheckingResult *result, NSMatchingFlags flags, BOOL *stop) {
-             [swaps addObject:[propertyName substringWithRange:result.range]];
-         }];
-        for (NSString *stringToSwap in swaps){
-            NSString *formatted = [NSString stringWithFormat:@"_%@",stringToSwap];
-            propertyName = [propertyName stringByReplacingOccurrencesOfString:stringToSwap withString:formatted];
+        jsonKey = propertyName;
+        NSString *searchPattern = @"([a-z][A-Z])";
+        NSError *error;
+        NSMutableSet *swaps = [NSMutableSet new];
+        NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:searchPattern options:0 error:&error];
+        if (!error){
+            [regex enumerateMatchesInString:jsonKey options:0 range:NSMakeRange(0, jsonKey.length) usingBlock:
+             ^(NSTextCheckingResult *result, NSMatchingFlags flags, BOOL *stop) {
+                 [swaps addObject:[jsonKey substringWithRange:result.range]];
+             }];
+            for (NSString *stringToSwap in swaps){
+                NSString *formatted = [NSString stringWithFormat:@"%c_%c",[stringToSwap characterAtIndex:0],[stringToSwap characterAtIndex:1]];
+                jsonKey = [jsonKey stringByReplacingOccurrencesOfString:stringToSwap withString:formatted];
+            }
         }
+        else {
+            NSLog(@"Error, failed to format property name: %@",error.localizedDescription);
+        }
+        
+        // catch word trailing ALLCAPS word
+        searchPattern = @"([A-Z][a-z])";
+        swaps = [NSMutableSet new];
+        regex = [NSRegularExpression regularExpressionWithPattern:searchPattern options:0 error:&error];
+        if (!error){
+            [regex enumerateMatchesInString:jsonKey options:0 range:NSMakeRange(0, jsonKey.length) usingBlock:
+             ^(NSTextCheckingResult *result, NSMatchingFlags flags, BOOL *stop) {
+                 [swaps addObject:[jsonKey substringWithRange:result.range]];
+             }];
+            for (NSString *stringToSwap in swaps){
+                NSString *formatted = [NSString stringWithFormat:@"_%@",stringToSwap];
+                jsonKey = [jsonKey stringByReplacingOccurrencesOfString:stringToSwap withString:formatted];
+            }
+        }
+        else {
+            NSLog(@"Error, failed to format property name: %@",error.localizedDescription);
+        }
+        
+        jsonKey = [jsonKey lowercaseString]; // catch ALLCAPS
+        while ([jsonKey containsString:@"__"]) {
+            jsonKey = [jsonKey stringByReplacingOccurrencesOfString:@"__" withString:@"_"]; // catch camel case which already had underscores
+        }
+        
+        [self _underscoreJSONKeyCache][propertyName] = jsonKey;
+        return propertyName;
     }
-    else {
-        NSLog(@"Error, failed to format property name: %@",error.localizedDescription);
-    }
-    
-    propertyName = [propertyName lowercaseString]; // catch ALLCAPS
-    while ([propertyName containsString:@"__"]) {
-        propertyName = [propertyName stringByReplacingOccurrencesOfString:@"__" withString:@"_"]; // catch camel case which already had underscores
-    }
-    
-    return propertyName;
 }
 
 // default formatting for property names when reading keys
-+(NSString*)_formatPropertyNameCamelCase:(NSString*)propertyName {
-    NSString *searchPattern = @"_."; //
-    NSError *error;
-    NSMutableSet *swaps = [NSMutableSet new];
-    NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:searchPattern options:0 error:&error];
-    if (!error){
-        [regex enumerateMatchesInString:propertyName options:0 range:NSMakeRange(0, propertyName.length) usingBlock:
-         ^(NSTextCheckingResult *result, NSMatchingFlags flags, BOOL *stop) {
-             [swaps addObject:[propertyName substringWithRange:result.range]];
-         }];
-        for (NSString *stringToSwap in swaps){
-            NSString *formatted = [[NSString stringWithFormat:@"%c",[stringToSwap characterAtIndex:1]] uppercaseString];
-            propertyName = [propertyName stringByReplacingOccurrencesOfString:stringToSwap withString:formatted];
-        }
++(NSString*)_formatPropertyNameCamelCase:(NSString*)jsonKey {
+    NSString *camelCasePropertyName = [self _camelCaseNameCache][jsonKey];
+    if (camelCasePropertyName){
+        return camelCasePropertyName;
     }
     else {
-        NSLog(@"Error, failed to format property name: %@",error.localizedDescription);
+        camelCasePropertyName = jsonKey;
+        NSString *searchPattern = @"_."; //
+        NSError *error;
+        NSMutableSet *swaps = [NSMutableSet new];
+        NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:searchPattern options:0 error:&error];
+        if (!error){
+            [regex enumerateMatchesInString:camelCasePropertyName options:0 range:NSMakeRange(0, camelCasePropertyName.length) usingBlock:
+             ^(NSTextCheckingResult *result, NSMatchingFlags flags, BOOL *stop) {
+                 [swaps addObject:[camelCasePropertyName substringWithRange:result.range]];
+             }];
+            for (NSString *stringToSwap in swaps){
+                NSString *formatted = [[NSString stringWithFormat:@"%c",[stringToSwap characterAtIndex:1]] uppercaseString];
+                camelCasePropertyName = [camelCasePropertyName stringByReplacingOccurrencesOfString:stringToSwap withString:formatted];
+            }
+        }
+        else {
+            NSLog(@"Error, failed to format property name: %@",error.localizedDescription);
+        }
+        
+        [self _camelCaseNameCache][jsonKey] = camelCasePropertyName;
+        return camelCasePropertyName;
     }
-    
-    return propertyName;
 }
 
 // default formatting for class names
 +(NSString*)_formatClassNameCamelCase:(NSString*)className {
-    className = [self _formatPropertyNameCamelCase:className];
-    NSString *firstChar = [[NSString stringWithFormat:@"%c",[className characterAtIndex:0]] uppercaseString];
-    className = [NSString stringWithFormat:@"%@%@",firstChar,[className substringFromIndex:1]];
-    return className;
+    NSString *camelCaseClassName = [self _camelCaseNameCache][className];
+    if (camelCaseClassName){
+        return camelCaseClassName;
+    }
+    else {
+        camelCaseClassName = [self _formatPropertyNameCamelCase:className];
+        NSString *firstChar = [[NSString stringWithFormat:@"%c",[camelCaseClassName characterAtIndex:0]] uppercaseString];
+        camelCaseClassName = [NSString stringWithFormat:@"%@%@",firstChar,[camelCaseClassName substringFromIndex:1]];
+        [self _camelCaseNameCache][className] = camelCaseClassName;
+        return camelCaseClassName;
+    }
 }
 
 #pragma mark - property names
@@ -398,18 +428,65 @@ NSString * const kMFJSONClassKey = @"_mf_class_key";
 }
 
 +(NSArray*)_propertiesForSubclass:(Class)klass {
-    unsigned count;
-    objc_property_t *properties = class_copyPropertyList(klass, &count);
-    NSMutableArray *propertyList = [NSMutableArray new];
-    for (unsigned idx = 0; idx < count; idx++) {
-        objc_property_t property = properties[idx];
-        NSString *name = [NSString stringWithUTF8String:property_getName(property)];
-        if ([klass _propertyShouldBeSkipped:name]){
-            [propertyList addObject:name];
-        }
+    NSString *className = NSStringFromClass(klass);
+    NSArray *classProperties = [self _classPropertiesCache][className];
+    if (classProperties){
+        return classProperties;
     }
-    free(properties);
-    return [NSArray arrayWithArray:propertyList];
+    else {
+        unsigned count;
+        objc_property_t *properties = class_copyPropertyList(klass, &count);
+        NSMutableArray *propertyList = [NSMutableArray new];
+        for (unsigned idx = 0; idx < count; idx++) {
+            objc_property_t property = properties[idx];
+            NSString *name = [NSString stringWithUTF8String:property_getName(property)];
+            if ([klass _propertyShouldBeSkipped:name]){
+                [propertyList addObject:name];
+            }
+        }
+        free(properties);
+        classProperties = [NSArray arrayWithArray:propertyList];
+        [self _classPropertiesCache][className] = classProperties;
+        return classProperties;
+    }
+}
+
+#pragma mark - caching
+
++(NSMutableDictionary*)_camelCaseNameCache {
+    static NSMutableDictionary *camelCaseJSONKeysCache;
+    static dispatch_once_t _camelCaseJSONKeyCacheToken;
+    dispatch_once(&_camelCaseJSONKeyCacheToken, ^{
+        camelCaseJSONKeysCache = [NSMutableDictionary new];
+    });
+    return camelCaseJSONKeysCache;
+}
+
++(NSMutableDictionary*)_underscoreJSONKeyCache {
+    static NSMutableDictionary *underscorePropNamesCache;
+    static dispatch_once_t _underscorePropNamesCacheToken;
+    dispatch_once(&_underscorePropNamesCacheToken, ^{
+        underscorePropNamesCache = [NSMutableDictionary new];
+    });
+    return underscorePropNamesCache;
+}
+
++(NSMutableDictionary*)_classPropertiesCache {
+    static NSMutableDictionary *classPropertiesCache;
+    static dispatch_once_t _classPropertiesCacheToken;
+    dispatch_once(&_classPropertiesCacheToken, ^{
+        classPropertiesCache = [NSMutableDictionary new];
+    });
+    return classPropertiesCache;
+}
+
++(NSMutableDictionary*)_propertyTypeCache {
+    static NSMutableDictionary *propertyTypeCache;
+    static dispatch_once_t _propertyTypeCache;
+    dispatch_once(&_propertyTypeCache, ^{
+        propertyTypeCache = [NSMutableDictionary new];
+    });
+    return propertyTypeCache;
 }
 
 @end
